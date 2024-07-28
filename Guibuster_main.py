@@ -29,35 +29,33 @@ def check_and_activate_venv():
 check_and_activate_venv()
 import tkinter as tk
 
-class GobusterMain:
+class MainApp:
     def __init__(self, root):
         self.root = root
-        self.root.title("Gobuster Interface")
-        self.root.geometry("400x400")
+        self.root.title("Guibuster Main")
+        self.root.geometry("400x300")
         self.root.configure(bg=BG_COLOR)
 
         title_frame = tk.Frame(self.root, bg=BG_COLOR)
-        title_frame.pack(pady=20)
-        tk.Label(title_frame, text="Gobuster Interface", font=("Helvetica", 20, "bold"), fg=FG_COLOR, bg=BG_COLOR).pack()
+        title_frame.pack(pady=10)
+        tk.Label(title_frame, text="Guibuster", font=("Helvetica", 20, "bold"), fg=FG_COLOR, bg=BG_COLOR).pack()
 
         button_frame = tk.Frame(self.root, bg=BG_COLOR)
-        button_frame.pack(pady=20)
+        button_frame.pack(pady=10)
 
-        self.create_command_button(button_frame, "DNS Subcommand", "Gobuster_dns.py", 0)
-        self.create_command_button(button_frame, "DIR Subcommand", "Gobuster_dir.py", 1)
-        self.create_command_button(button_frame, "VHOST Subcommand", "Gobuster_vhost.py", 2)
-        self.create_command_button(button_frame, "FUZZ Subcommand", "Gobuster_fuzz.py", 3)
-        self.create_command_button(button_frame, "S3 Subcommand", "Gobuster_s3.py", 4)
-        self.create_command_button(button_frame, "GCS Subcommand", "Gobuster_gcs.py", 5)
-        self.create_command_button(button_frame, "TFTP Subcommand", "Gobuster_tftp.py", 6)
+        tk.Button(button_frame, text="Run DIR", command=lambda: self.run_script("Guibuster_dir.py"), bg=BG_COLOR, fg=FG_COLOR).grid(row=0, column=0, padx=10, pady=5)
+        tk.Button(button_frame, text="Run VHOST", command=lambda: self.run_script("Guibuster_vhost.py"), bg=BG_COLOR, fg=FG_COLOR).grid(row=0, column=1, padx=10, pady=5)
+        tk.Button(button_frame, text="Run FUZZ", command=lambda: self.run_script("Guibuster_fuzz.py"), bg=BG_COLOR, fg=FG_COLOR).grid(row=1, column=0, padx=10, pady=5)
+        tk.Button(button_frame, text="Run S3", command=lambda: self.run_script("Guibuster_s3.py"), bg=BG_COLOR, fg=FG_COLOR).grid(row=1, column=1, padx=10, pady=5)
+        tk.Button(button_frame, text="Run GCS", command=lambda: self.run_script("Guibuster_gcs.py"), bg=BG_COLOR, fg=FG_COLOR).grid(row=2, column=0, padx=10, pady=5)
+        tk.Button(button_frame, text="Run TFTP", command=lambda: self.run_script("Guibuster_tftp.py"), bg=BG_COLOR, fg=FG_COLOR).grid(row=2, column=1, padx=10, pady=5)
 
-    def create_command_button(self, parent, text, script, row):
-        tk.Button(parent, text=text, command=lambda: self.run_script(script), bg=BG_COLOR, fg=FG_COLOR, width=20).grid(row=row, column=0, padx=5, pady=5)
+        tk.Button(self.root, text="Cancel", command=self.root.quit, bg=BG_COLOR, fg=FG_COLOR).pack(pady=10)
 
-    def run_script(self, script):
-        subprocess.Popen([sys.executable, script])
+    def run_script(self, script_name):
+        subprocess.Popen([sys.executable, script_name])
 
 if __name__ == "__main__":
     root = tk.Tk()
-    app = GobusterMain(root)
+    app = MainApp(root)
     root.mainloop()
