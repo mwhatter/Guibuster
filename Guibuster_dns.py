@@ -1,6 +1,8 @@
 import os
 import subprocess
 import sys
+import tkinter as tk
+from tkinter import messagebox
 
 VENV_DIR = "venv"
 
@@ -27,8 +29,6 @@ def check_and_activate_venv():
         sys.exit(0)
 
 check_and_activate_venv()
-import tkinter as tk
-from tkinter import messagebox
 
 class ScrollableHelpWindow:
     def __init__(self, parent, title, help_text):
@@ -55,7 +55,7 @@ class DNSWindow:
         self.root = root
         self.window = tk.Toplevel(root)
         self.window.title("Gobuster DNS")
-        self.window.geometry("800x600")
+        self.window.geometry("650x500")  # Adjusted window size
         self.window.configure(bg=BG_COLOR)
 
         title_frame = tk.Frame(self.window, bg=BG_COLOR)
@@ -73,17 +73,28 @@ class DNSWindow:
         tk.Button(button_frame, text="Help", command=self.show_help, bg=BG_COLOR, fg=FG_COLOR).grid(row=0, column=1, padx=5, pady=5)
 
     def create_dns_section(self, parent_frame):
-        dns_frame = tk.LabelFrame(parent_frame, text="DNS Subcommand", fg=FG_COLOR, bg=BG_COLOR, font=("Helvetica", 12, "bold"), width=600)
+        dns_frame = tk.LabelFrame(parent_frame, text="DNS Subcommand", fg=FG_COLOR, bg=BG_COLOR, font=("Helvetica", 12, "bold"))
         dns_frame.pack(pady=10)
 
         self.dns_checkbuttons = {}
         self.dns_entries = {}
 
-        flags_with_entries = ["-d", "-r", "--timeout", "--delay", "-o", "-p", "-t", "-w"]
+        # Prominent Target Domain and Wordlist inputs
+        tk.Label(dns_frame, text="Target Domain (-d)", font=("Helvetica", 12, "bold"), fg=FG_COLOR, bg=BG_COLOR).grid(row=0, column=0, padx=5, pady=5, sticky='w')
+        self.target_domain_entry = tk.Entry(dns_frame, bg=BG_COLOR, fg=FG_COLOR, width=40)
+        self.target_domain_entry.grid(row=0, column=1, padx=5, pady=5, sticky='w')
+
+        tk.Label(dns_frame, text="Path to Wordlist (-w)", font=("Helvetica", 12, "bold"), fg=FG_COLOR, bg=BG_COLOR).grid(row=1, column=0, padx=5, pady=5, sticky='w')
+        self.wordlist_entry = tk.Entry(dns_frame, bg=BG_COLOR, fg=FG_COLOR, width=40)
+        self.wordlist_entry.insert(0, "/usr/share/seclists/Discovery/DNS/common.txt")  # Prepopulate with common.txt
+        self.wordlist_entry.grid(row=1, column=1, padx=5, pady=5, sticky='w')
+
+        flags_with_entries = ["-r", "--timeout", "--delay", "-o", "-p", "-t"]
         flags_without_entries = ["-c", "-i", "--wildcard", "--no-color", "--no-error", "-z", "-q", "-v"]
 
+        # Boolean Flags
         boolean_frame = tk.Frame(dns_frame, bg=BG_COLOR)
-        boolean_frame.pack(pady=5)
+        boolean_frame.grid(row=2, column=0, columnspan=2, pady=5)
 
         for i, flag in enumerate(flags_without_entries):
             var = tk.BooleanVar()
@@ -91,16 +102,21 @@ class DNSWindow:
             chk.grid(row=i//4, column=i%4, padx=5, pady=2, sticky='w')
             self.dns_checkbuttons[flag] = var
 
+        # Textbox Flags
         entry_frame = tk.Frame(dns_frame, bg=BG_COLOR)
-        entry_frame.pack(pady=5)
+        entry_frame.grid(row=3, column=0, columnspan=2, pady=5)
 
         for i, flag in enumerate(flags_with_entries):
-            tk.Label(entry_frame, text=flag, fg=FG_COLOR, bg=BG_COLOR).grid(row=i, column=0, padx=5, pady=2, sticky='w')
+            tk.Label(entry_frame, text=flag, fg=FG_COLOR, bg=BG_COLOR).grid(row=i%3, column=(i//3)*2, padx=5, pady=2, sticky='w')
             entry = tk.Entry(entry_frame, bg=BG_COLOR, fg=FG_COLOR)
-            entry.grid(row=i, column=1, padx=5, pady=2, sticky='w')
+            entry.grid(row=i%3, column=(i//3)*2+1, padx=5, pady=2, sticky='w')
             self.dns_entries[flag] = entry
 
-        tk.Button(dns_frame, text="Run DNS", command=self.run_dns, bg=BG_COLOR, fg=FG_COLOR).pack(pady=10)
+        # Proxychains checkbox
+        self.proxychains_var = tk.BooleanVar()
+        tk.Checkbutton(dns_frame, text="Use Proxychains", variable=self.proxychains_var, fg=FG_COLOR, bg=BG_COLOR, selectcolor=BG_COLOR).grid(row=4, column=0, columnspan=2, pady=5, sticky='w')
+
+        tk.Button(dns_frame, text="Run DNS", command=self.run_dns, bg=BG_COLOR, fg=FG_COLOR).grid(row=5, column=0, columnspan=2, pady=10)
 
     def show_help(self):
         help_text = """\
@@ -131,13 +147,29 @@ gobuster dns -d mysite.com -t 50 -w common-names.txt
 
     def run_dns(self):
         command = ["gobuster", "dns"]
+
+        # Include the Target Domain
+        target_domain = self.target_domain_entry.get().strip()
+        if target_domain:
+            command.extend(["-d", target_domain])
+
+        # Include the Wordlist
+        wordlist_path = self.wordlist_entry.get().strip()
+        if wordlist_path:
+            command.extend(["-w", wordlist_path])
+
+        if self.proxychains_var.get():
+            command.insert(0, "proxychains")
+
         for flag, var in self.dns_checkbuttons.items():
             if var.get():
                 command.append(flag)
+
         for flag, entry in self.dns_entries.items():
             value = entry.get().strip()
             if value:
                 command.extend([flag, value])
+
         self.execute_command(command)
 
     def execute_command(self, command):

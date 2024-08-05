@@ -1,6 +1,8 @@
 import os
 import subprocess
 import sys
+import tkinter as tk
+from tkinter import messagebox
 
 VENV_DIR = "venv"
 
@@ -27,8 +29,6 @@ def check_and_activate_venv():
         sys.exit(0)
 
 check_and_activate_venv()
-import tkinter as tk
-from tkinter import messagebox
 
 class ScrollableHelpWindow:
     def __init__(self, parent, title, help_text):
@@ -55,7 +55,7 @@ class S3Window:
         self.root = root
         self.window = tk.Toplevel(root)
         self.window.title("Guibuster S3")
-        self.window.geometry("800x450")
+        self.window.geometry("600x480")  
         self.window.configure(bg=BG_COLOR)
 
         title_frame = tk.Frame(self.window, bg=BG_COLOR)
@@ -79,28 +79,33 @@ class S3Window:
         self.s3_checkbuttons = {}
         self.s3_entries = {}
 
-        flags_with_entries = ["-m", "--proxy", "--random-agent", "--retry", "--retry-attempts", "--timeout", "-a"]
+        # Boolean Flags in one row
         flags_without_entries = ["-k", "--no-color", "--no-error", "-z", "-q", "-v"]
-
         boolean_frame = tk.Frame(s3_frame, bg=BG_COLOR)
-        boolean_frame.pack(pady=5)
+        boolean_frame.grid(row=0, column=0, columnspan=4, pady=5)
 
         for i, flag in enumerate(flags_without_entries):
             var = tk.BooleanVar()
             chk = tk.Checkbutton(boolean_frame, text=flag, variable=var, fg=FG_COLOR, bg=BG_COLOR, selectcolor=BG_COLOR)
-            chk.grid(row=i//4, column=i%4, padx=5, pady=2, sticky='w')
+            chk.grid(row=0, column=i, padx=5, pady=2, sticky='w')
             self.s3_checkbuttons[flag] = var
 
+        # Textbox Flags, max 6 rows
+        flags_with_entries = ["-m", "--proxy", "--random-agent", "--retry", "--retry-attempts", "--timeout", "-a", "-o", "-p", "-t", "-w"]
         entry_frame = tk.Frame(s3_frame, bg=BG_COLOR)
-        entry_frame.pack(pady=5)
+        entry_frame.grid(row=1, column=0, columnspan=4, pady=5)
 
         for i, flag in enumerate(flags_with_entries):
-            tk.Label(entry_frame, text=flag, fg=FG_COLOR, bg=BG_COLOR).grid(row=i%9, column=(i//9)*2, padx=5, pady=2, sticky='w')
+            tk.Label(entry_frame, text=flag, fg=FG_COLOR, bg=BG_COLOR).grid(row=i%6, column=(i//6)*2, padx=5, pady=2, sticky='w')
             entry = tk.Entry(entry_frame, bg=BG_COLOR, fg=FG_COLOR)
-            entry.grid(row=i%9, column=(i//9)*2+1, padx=5, pady=2, sticky='w')
+            entry.grid(row=i%6, column=(i//6)*2+1, padx=5, pady=2, sticky='w')
             self.s3_entries[flag] = entry
 
-        tk.Button(s3_frame, text="Run S3", command=self.run_s3, bg=BG_COLOR, fg=FG_COLOR).pack(pady=10)
+        # Proxychains checkbox
+        self.proxychains_var = tk.BooleanVar()
+        tk.Checkbutton(s3_frame, text="Use Proxychains", variable=self.proxychains_var, fg=FG_COLOR, bg=BG_COLOR, selectcolor=BG_COLOR).grid(row=2, column=0, padx=5, pady=5, sticky='w')
+
+        tk.Button(s3_frame, text="Run S3", command=self.run_s3, bg=BG_COLOR, fg=FG_COLOR).grid(row=3, column=0, columnspan=4, pady=10)
 
     def show_help(self):
         help_text = """\
@@ -130,6 +135,9 @@ Global Flags:
 
     def run_s3(self):
         command = ["gobuster", "s3"]
+
+        if self.proxychains_var.get():
+            command.insert(0, "proxychains")
 
         for flag, var in self.s3_checkbuttons.items():
             if var.get():

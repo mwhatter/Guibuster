@@ -1,6 +1,8 @@
 import os
 import subprocess
 import sys
+import tkinter as tk
+from tkinter import messagebox
 
 VENV_DIR = "venv"
 
@@ -27,8 +29,6 @@ def check_and_activate_venv():
         sys.exit(0)
 
 check_and_activate_venv()
-import tkinter as tk
-from tkinter import messagebox
 
 class ScrollableHelpWindow:
     def __init__(self, parent, title, help_text):
@@ -55,7 +55,7 @@ class DIRWindow:
         self.root = root
         self.window = tk.Toplevel(root)
         self.window.title("Guibuster DIR")
-        self.window.geometry("800x580")
+        self.window.geometry("800x600")
         self.window.configure(bg=BG_COLOR)
 
         title_frame = tk.Frame(self.window, bg=BG_COLOR)
@@ -79,11 +79,22 @@ class DIRWindow:
         self.dir_checkbuttons = {}
         self.dir_entries = {}
 
-        flags_with_entries = ["-u", "-c", "-d", "--exclude-length", "-e", "-x", "-r", "-H", "-m", "-n", "-k", "-P", "--proxy", "--random-agent", "--retry", "--retry-attempts", "--timeout", "-a", "-U"]
-        flags_without_entries = ["--no-color", "--no-error", "-z", "-q", "-v"]
+        # Target URL
+        tk.Label(dir_frame, text="Target URL (-u)", fg=FG_COLOR, bg=BG_COLOR).grid(row=0, column=0, padx=5, pady=5, sticky='w')
+        self.dir_entries["-u"] = tk.Entry(dir_frame, bg=BG_COLOR, fg=FG_COLOR, width=50)
+        self.dir_entries["-u"].grid(row=0, column=1, padx=5, pady=5, columnspan=3, sticky='w')
 
+        # Path to Wordlist
+        tk.Label(dir_frame, text="Path to Wordlist (-w)", fg=FG_COLOR, bg=BG_COLOR).grid(row=1, column=0, padx=5, pady=5, sticky='w')
+        default_wordlist = "/usr/share/seclists/Discovery/Web-Content/common.txt"  # Adjust this path if necessary
+        self.dir_entries["-w"] = tk.Entry(dir_frame, bg=BG_COLOR, fg=FG_COLOR, width=50)
+        self.dir_entries["-w"].insert(0, default_wordlist)
+        self.dir_entries["-w"].grid(row=1, column=1, padx=5, pady=5, columnspan=3, sticky='w')
+
+        # Boolean Flags
+        flags_without_entries = ["--no-color", "--no-error", "-z", "-q", "-v", "--discover-backup", "--expanded", "--follow-redirect", "--no-status", "--no-tls-validation", "--random-agent", "--retry"]
         boolean_frame = tk.Frame(dir_frame, bg=BG_COLOR)
-        boolean_frame.pack(pady=5)
+        boolean_frame.grid(row=2, column=0, columnspan=4, pady=5)
 
         for i, flag in enumerate(flags_without_entries):
             var = tk.BooleanVar()
@@ -91,16 +102,22 @@ class DIRWindow:
             chk.grid(row=i//4, column=i%4, padx=5, pady=2, sticky='w')
             self.dir_checkbuttons[flag] = var
 
+        # Textbox Flags
+        flags_with_entries = ["-c", "--exclude-length", "-x", "-H", "-m", "-P", "--proxy", "--retry-attempts", "--timeout", "-a", "-U", "-o", "-p", "-t"]
         entry_frame = tk.Frame(dir_frame, bg=BG_COLOR)
-        entry_frame.pack(pady=5)
+        entry_frame.grid(row=3, column=0, columnspan=4, pady=5)
 
         for i, flag in enumerate(flags_with_entries):
-            tk.Label(entry_frame, text=flag, fg=FG_COLOR, bg=BG_COLOR).grid(row=i%9, column=(i//9)*2, padx=5, pady=2, sticky='w')
+            tk.Label(entry_frame, text=flag, fg=FG_COLOR, bg=BG_COLOR).grid(row=i%5, column=(i//5)*2, padx=5, pady=2, sticky='w')
             entry = tk.Entry(entry_frame, bg=BG_COLOR, fg=FG_COLOR)
-            entry.grid(row=i%9, column=(i//9)*2+1, padx=5, pady=2, sticky='w')
+            entry.grid(row=i%5, column=(i//5)*2+1, padx=5, pady=2, sticky='w')
             self.dir_entries[flag] = entry
 
-        tk.Button(dir_frame, text="Run DIR", command=self.run_dir, bg=BG_COLOR, fg=FG_COLOR).pack(pady=10)
+        # Proxychains checkbox
+        self.proxychains_var = tk.BooleanVar()
+        tk.Checkbutton(dir_frame, text="Use Proxychains", variable=self.proxychains_var, fg=FG_COLOR, bg=BG_COLOR, selectcolor=BG_COLOR).grid(row=4, column=0, padx=5, pady=5, sticky='w')
+
+        tk.Button(dir_frame, text="Run DIR", command=self.run_dir, bg=BG_COLOR, fg=FG_COLOR).grid(row=5, column=0, columnspan=4, pady=10)
 
     def show_help(self):
         help_text = """\
@@ -141,6 +158,9 @@ Global Flags:
 
     def run_dir(self):
         command = ["gobuster", "dir"]
+
+        if self.proxychains_var.get():
+            command.insert(0, "proxychains")
 
         for flag, var in self.dir_checkbuttons.items():
             if var.get():

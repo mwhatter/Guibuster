@@ -1,6 +1,7 @@
 import os
 import subprocess
 import sys
+import tkinter as tk
 
 VENV_DIR = "venv"
 
@@ -27,13 +28,12 @@ def check_and_activate_venv():
         sys.exit(0)
 
 check_and_activate_venv()
-import tkinter as tk
 
 class MainApp:
     def __init__(self, root):
         self.root = root
         self.root.title("Guibuster Main")
-        self.root.geometry("400x300")
+        self.root.geometry("420x420")
         self.root.configure(bg=BG_COLOR)
 
         title_frame = tk.Frame(self.root, bg=BG_COLOR)
@@ -43,14 +43,23 @@ class MainApp:
         button_frame = tk.Frame(self.root, bg=BG_COLOR)
         button_frame.pack(pady=10)
 
-        tk.Button(button_frame, text="Run DIR", command=lambda: self.run_script("Guibuster_dir.py"), bg=BG_COLOR, fg=FG_COLOR).grid(row=0, column=0, padx=10, pady=5)
-        tk.Button(button_frame, text="Run VHOST", command=lambda: self.run_script("Guibuster_vhost.py"), bg=BG_COLOR, fg=FG_COLOR).grid(row=0, column=1, padx=10, pady=5)
-        tk.Button(button_frame, text="Run FUZZ", command=lambda: self.run_script("Guibuster_fuzz.py"), bg=BG_COLOR, fg=FG_COLOR).grid(row=1, column=0, padx=10, pady=5)
-        tk.Button(button_frame, text="Run S3", command=lambda: self.run_script("Guibuster_s3.py"), bg=BG_COLOR, fg=FG_COLOR).grid(row=1, column=1, padx=10, pady=5)
-        tk.Button(button_frame, text="Run GCS", command=lambda: self.run_script("Guibuster_gcs.py"), bg=BG_COLOR, fg=FG_COLOR).grid(row=2, column=0, padx=10, pady=5)
-        tk.Button(button_frame, text="Run TFTP", command=lambda: self.run_script("Guibuster_tftp.py"), bg=BG_COLOR, fg=FG_COLOR).grid(row=2, column=1, padx=10, pady=5)
+        self.create_mode_button(button_frame, "Run DIR", "Directory enumeration mode", "Guibuster_dir.py", 0, 0)
+        self.create_mode_button(button_frame, "Run VHOST", "VHOST enumeration mode", "Guibuster_vhost.py", 0, 1)
+        self.create_mode_button(button_frame, "Run DNS", "DNS subdomain enumeration mode", "Guibuster_dns.py", 1, 0)
+        self.create_mode_button(button_frame, "Run FUZZ", "Fuzzing mode", "Guibuster_fuzz.py", 1, 1)
+        self.create_mode_button(button_frame, "Run S3", "AWS bucket enumeration mode", "Guibuster_s3.py", 2, 0)
+        self.create_mode_button(button_frame, "Run TFTP", "TFTP enumeration mode", "Guibuster_tftp.py", 2, 1)
+        self.create_mode_button(button_frame, "Run GCS", "Google Cloud bucket enumeration mode", "Guibuster_gcs.py", 3, 0)
+        
+        # Added Cancel button at the end
+        self.create_mode_button(button_frame, "Cancel", "Exit the application", None, 3, 1, is_cancel=True)
 
-        tk.Button(self.root, text="Cancel", command=self.root.quit, bg=BG_COLOR, fg=FG_COLOR).pack(pady=10)
+    def create_mode_button(self, frame, text, description, script_name, row, col, is_cancel=False):
+        tk.Label(frame, text=description, fg=FG_COLOR, bg=BG_COLOR).grid(row=row * 2, column=col, pady=5)
+        if is_cancel:
+            tk.Button(frame, text=text, command=self.root.quit, bg=BG_COLOR, fg=FG_COLOR, height=2, width=15).grid(row=row * 2 + 1, column=col, padx=10, pady=5)
+        else:
+            tk.Button(frame, text=text, command=lambda: self.run_script(script_name), bg=BG_COLOR, fg=FG_COLOR, height=2, width=15).grid(row=row * 2 + 1, column=col, padx=10, pady=5)
 
     def run_script(self, script_name):
         subprocess.Popen([sys.executable, script_name])

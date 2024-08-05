@@ -1,6 +1,8 @@
 import os
 import subprocess
 import sys
+import tkinter as tk
+from tkinter import messagebox
 
 VENV_DIR = "venv"
 
@@ -27,8 +29,6 @@ def check_and_activate_venv():
         sys.exit(0)
 
 check_and_activate_venv()
-import tkinter as tk
-from tkinter import messagebox
 
 class ScrollableHelpWindow:
     def __init__(self, parent, title, help_text):
@@ -55,52 +55,57 @@ class TFTPWindow:
         self.root = root
         self.window = tk.Toplevel(root)
         self.window.title("Guibuster TFTP")
-        self.window.geometry("800x450")
+        self.window.geometry("400x330")  # Smaller window size
         self.window.configure(bg=BG_COLOR)
 
         title_frame = tk.Frame(self.window, bg=BG_COLOR)
-        title_frame.pack(pady=10)
-        tk.Label(title_frame, text="Guibuster TFTP", font=("Helvetica", 20, "bold"), fg=FG_COLOR, bg=BG_COLOR).pack()
+        title_frame.pack(pady=5)
+        tk.Label(title_frame, text="Guibuster TFTP", font=("Helvetica", 16, "bold"), fg=FG_COLOR, bg=BG_COLOR).pack()
 
         command_frame = tk.Frame(self.window, bg=BG_COLOR)
-        command_frame.pack(pady=10)
+        command_frame.pack(pady=5)
 
         self.create_tftp_section(command_frame)
 
         button_frame = tk.Frame(self.window, bg=BG_COLOR)
-        button_frame.pack(pady=10)
+        button_frame.pack(pady=5)
         tk.Button(button_frame, text="Cancel", command=self.window.destroy, bg=BG_COLOR, fg=FG_COLOR).grid(row=0, column=0, padx=5, pady=5)
         tk.Button(button_frame, text="Help", command=self.show_help, bg=BG_COLOR, fg=FG_COLOR).grid(row=0, column=1, padx=5, pady=5)
 
     def create_tftp_section(self, parent_frame):
-        tftp_frame = tk.LabelFrame(parent_frame, text="TFTP Subcommand", fg=FG_COLOR, bg=BG_COLOR, font=("Helvetica", 12, "bold"), width=600)
-        tftp_frame.pack(pady=10)
+        tftp_frame = tk.LabelFrame(parent_frame, text="TFTP Subcommand", fg=FG_COLOR, bg=BG_COLOR, font=("Helvetica", 12, "bold"))
+        tftp_frame.pack(pady=5)
 
         self.tftp_checkbuttons = {}
         self.tftp_entries = {}
 
-        flags_with_entries = ["-s", "--timeout"]
+        # Boolean Flags in two rows
         flags_without_entries = ["--no-color", "--no-error", "-z", "-q", "-v"]
-
         boolean_frame = tk.Frame(tftp_frame, bg=BG_COLOR)
         boolean_frame.pack(pady=5)
 
         for i, flag in enumerate(flags_without_entries):
             var = tk.BooleanVar()
             chk = tk.Checkbutton(boolean_frame, text=flag, variable=var, fg=FG_COLOR, bg=BG_COLOR, selectcolor=BG_COLOR)
-            chk.grid(row=i//4, column=i%4, padx=5, pady=2, sticky='w')
+            chk.grid(row=i//3, column=i%3, padx=5, pady=2, sticky='w')
             self.tftp_checkbuttons[flag] = var
 
+        # Textbox Flags
+        flags_with_entries = ["-s", "--timeout"]
         entry_frame = tk.Frame(tftp_frame, bg=BG_COLOR)
         entry_frame.pack(pady=5)
 
         for i, flag in enumerate(flags_with_entries):
-            tk.Label(entry_frame, text=flag, fg=FG_COLOR, bg=BG_COLOR).grid(row=i%9, column=(i//9)*2, padx=5, pady=2, sticky='w')
+            tk.Label(entry_frame, text=flag, fg=FG_COLOR, bg=BG_COLOR).grid(row=i, column=0, padx=5, pady=2, sticky='w')
             entry = tk.Entry(entry_frame, bg=BG_COLOR, fg=FG_COLOR)
-            entry.grid(row=i%9, column=(i//9)*2+1, padx=5, pady=2, sticky='w')
+            entry.grid(row=i, column=1, padx=5, pady=2, sticky='w')
             self.tftp_entries[flag] = entry
 
-        tk.Button(tftp_frame, text="Run TFTP", command=self.run_tftp, bg=BG_COLOR, fg=FG_COLOR).pack(pady=10)
+        # Proxychains checkbox
+        self.proxychains_var = tk.BooleanVar()
+        tk.Checkbutton(tftp_frame, text="Use Proxychains", variable=self.proxychains_var, fg=FG_COLOR, bg=BG_COLOR, selectcolor=BG_COLOR).pack(pady=5, anchor='w')
+
+        tk.Button(tftp_frame, text="Run TFTP", command=self.run_tftp, bg=BG_COLOR, fg=FG_COLOR).pack(pady=5)
 
     def show_help(self):
         help_text = """\
@@ -124,6 +129,9 @@ Global Flags:
 
     def run_tftp(self):
         command = ["gobuster", "tftp"]
+
+        if self.proxychains_var.get():
+            command.insert(0, "proxychains")
 
         for flag, var in self.tftp_checkbuttons.items():
             if var.get():

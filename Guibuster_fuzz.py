@@ -1,6 +1,8 @@
 import os
 import subprocess
 import sys
+import tkinter as tk
+from tkinter import messagebox
 
 VENV_DIR = "venv"
 
@@ -27,8 +29,6 @@ def check_and_activate_venv():
         sys.exit(0)
 
 check_and_activate_venv()
-import tkinter as tk
-from tkinter import messagebox
 
 class ScrollableHelpWindow:
     def __init__(self, parent, title, help_text):
@@ -55,7 +55,7 @@ class FUZZWindow:
         self.root = root
         self.window = tk.Toplevel(root)
         self.window.title("Guibuster FUZZ")
-        self.window.geometry("800x450")
+        self.window.geometry("800x550")  # Increased height for better spacing
         self.window.configure(bg=BG_COLOR)
 
         title_frame = tk.Frame(self.window, bg=BG_COLOR)
@@ -79,28 +79,45 @@ class FUZZWindow:
         self.fuzz_checkbuttons = {}
         self.fuzz_entries = {}
 
-        flags_with_entries = ["-u", "-c", "--exclude-length", "-b", "-r", "-H", "-m", "-k", "-P", "--proxy", "--random-agent", "--retry", "--retry-attempts", "--timeout", "-a", "-U"]
-        flags_without_entries = ["--no-color", "--no-error", "-z", "-q", "-v"]
+        # Target URL
+        tk.Label(fuzz_frame, text="Target URL (-u)", fg=FG_COLOR, bg=BG_COLOR).grid(row=0, column=0, padx=5, pady=5, sticky='w')
+        self.fuzz_entries["-u"] = tk.Entry(fuzz_frame, bg=BG_COLOR, fg=FG_COLOR, width=50)
+        self.fuzz_entries["-u"].grid(row=0, column=1, padx=5, pady=5, columnspan=3, sticky='w')
 
+        # Path to Wordlist
+        tk.Label(fuzz_frame, text="Path to Wordlist (-w)", fg=FG_COLOR, bg=BG_COLOR).grid(row=1, column=0, padx=5, pady=5, sticky='w')
+        default_wordlist = "/usr/share/seclists/Discovery/Web-Content/common.txt"  # Adjust this path if necessary
+        self.fuzz_entries["-w"] = tk.Entry(fuzz_frame, bg=BG_COLOR, fg=FG_COLOR, width=50)
+        self.fuzz_entries["-w"].insert(0, default_wordlist)
+        self.fuzz_entries["-w"].grid(row=1, column=1, padx=5, pady=5, columnspan=3, sticky='w')
+
+        # Boolean Flags in one row
+        flags_without_entries = ["--no-color", "--no-error", "-z", "-q", "-v"]
         boolean_frame = tk.Frame(fuzz_frame, bg=BG_COLOR)
-        boolean_frame.pack(pady=5)
+        boolean_frame.grid(row=2, column=0, columnspan=4, pady=5)
 
         for i, flag in enumerate(flags_without_entries):
             var = tk.BooleanVar()
             chk = tk.Checkbutton(boolean_frame, text=flag, variable=var, fg=FG_COLOR, bg=BG_COLOR, selectcolor=BG_COLOR)
-            chk.grid(row=i//4, column=i%4, padx=5, pady=2, sticky='w')
+            chk.grid(row=0, column=i, padx=5, pady=2, sticky='w')
             self.fuzz_checkbuttons[flag] = var
 
+        # Textbox Flags, max 6 rows
+        flags_with_entries = ["-c", "--exclude-length", "-b", "-r", "-H", "-m", "-k", "-P", "--proxy", "--random-agent", "--retry", "--retry-attempts", "--timeout", "-a", "-U", "-o", "-p", "-t"]
         entry_frame = tk.Frame(fuzz_frame, bg=BG_COLOR)
-        entry_frame.pack(pady=5)
+        entry_frame.grid(row=3, column=0, columnspan=4, pady=5)
 
         for i, flag in enumerate(flags_with_entries):
-            tk.Label(entry_frame, text=flag, fg=FG_COLOR, bg=BG_COLOR).grid(row=i%9, column=(i//9)*2, padx=5, pady=2, sticky='w')
+            tk.Label(entry_frame, text=flag, fg=FG_COLOR, bg=BG_COLOR).grid(row=i%6, column=(i//6)*2, padx=5, pady=2, sticky='w')
             entry = tk.Entry(entry_frame, bg=BG_COLOR, fg=FG_COLOR)
-            entry.grid(row=i%9, column=(i//9)*2+1, padx=5, pady=2, sticky='w')
+            entry.grid(row=i%6, column=(i//6)*2+1, padx=5, pady=2, sticky='w')
             self.fuzz_entries[flag] = entry
 
-        tk.Button(fuzz_frame, text="Run FUZZ", command=self.run_fuzz, bg=BG_COLOR, fg=FG_COLOR).pack(pady=10)
+        # Proxychains checkbox
+        self.proxychains_var = tk.BooleanVar()
+        tk.Checkbutton(fuzz_frame, text="Use Proxychains", variable=self.proxychains_var, fg=FG_COLOR, bg=BG_COLOR, selectcolor=BG_COLOR).grid(row=4, column=0, padx=5, pady=5, sticky='w')
+
+        tk.Button(fuzz_frame, text="Run FUZZ", command=self.run_fuzz, bg=BG_COLOR, fg=FG_COLOR).grid(row=5, column=0, columnspan=4, pady=10)
 
     def show_help(self):
         help_text = """\
@@ -138,6 +155,9 @@ Global Flags:
 
     def run_fuzz(self):
         command = ["gobuster", "fuzz"]
+
+        if self.proxychains_var.get():
+            command.insert(0, "proxychains")
 
         for flag, var in self.fuzz_checkbuttons.items():
             if var.get():
