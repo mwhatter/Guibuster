@@ -2,6 +2,7 @@ import os
 import subprocess
 import sys
 import platform
+import shutil
 
 VENV_DIR = "venv"
 REPO_URL = "https://github.com/yourusername/guibuster.git"
@@ -106,7 +107,6 @@ def setup_shortcuts():
             shortcut_path = os.path.join(desktop_dir, f"{script[:-3]}.lnk" if is_windows() else f"{script[:-3]}.desktop")
             
             if is_windows():
-                # Create a shortcut using Python (Windows-specific)
                 import winshell
                 winshell.CreateShortcut(
                     Path=shortcut_path,
@@ -115,7 +115,6 @@ def setup_shortcuts():
                     Description=f"Shortcut to {script}"
                 )
             else:
-                # Create a .desktop file for Linux
                 with open(shortcut_path, 'w') as f:
                     f.write(f"[Desktop Entry]\n"
                             f"Name={script[:-3]}\n"
@@ -124,6 +123,37 @@ def setup_shortcuts():
                             f"Terminal=false\n"
                             f"Icon=utilities-terminal\n")
                 os.chmod(shortcut_path, 0o755)
+
+def setup_proxychains():
+    """Set up proxychains on Linux."""
+    if is_linux():
+        check_and_install_dependency(["proxychains4", "--version"], "sudo apt-get install proxychains4 -y")
+        
+        config_path = "/etc/proxychains.conf"
+        if not os.path.exists(config_path):
+            print("Creating proxychains configuration...")
+            with open(config_path, "w") as f:
+                f.write("strict_chain\n"
+                        "proxy_dns\n"
+                        "remote_dns_subnet 224\n"
+                        "tcp_read_time_out 15000\n"
+                        "tcp_connect_time_out 8000\n"
+                        "socks4 127.0.0.1 9050\n")
+
+        print("Proxychains setup complete. Edit /etc/proxychains.conf to configure your proxy settings.")
+
+def check_and_install_dependency(command, install_command):
+    """Check and install a dependency if not present."""
+    try:
+        subprocess.check_output(command, shell=True)
+        print(f"{command[0]} is already installed.")
+    except subprocess.CalledProcessError:
+        print(f"{command[0]} is not installed. Installing...")
+        try:
+            subprocess.check_call(install_command, shell=True)
+        except subprocess.CalledProcessError as e:
+            print(f"Failed to install {command[0]}. Error: {e}")
+            sys.exit(1)
 
 def main_setup():
     """Main setup function."""
@@ -134,6 +164,7 @@ def main_setup():
     download_guibuster()
     download_wordlist()
     setup_shortcuts()
+    setup_proxychains()
     print("Setup completed successfully!")
 
 if __name__ == "__main__":
