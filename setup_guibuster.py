@@ -5,7 +5,7 @@ import platform
 import shutil
 
 VENV_DIR = "venv"
-REPO_URL = "https://github.com/yourusername/guibuster.git"
+REPO_URL = "https://github.com/mwhatter/Guibuster/guibuster.git"
 WORDLIST_URL = "https://github.com/danielmiessler/SecLists/raw/master/Discovery/DNS/common.txt"
 
 def is_windows():
